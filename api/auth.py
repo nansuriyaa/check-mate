@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
 import os
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -54,4 +54,25 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Se
     user = db.query(User).filter(User.user_name == token_data.username).first()
     if user is None:
         raise credentials_exception
+    return user
+
+async def get_current_user_from_cookie(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+    
+    # Remove "Bearer " prefix if present (cookies usually just store the token)
+    if token.startswith("Bearer "):
+        token = token.split(" ")[1]
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        token_data = TokenData(username=username)
+    except JWTError:
+        return None
+        
+    user = db.query(User).filter(User.user_name == token_data.username).first()
     return user

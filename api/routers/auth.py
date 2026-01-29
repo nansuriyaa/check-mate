@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -62,3 +62,39 @@ async def login_for_access_token(
         data={"sub": user.user_name}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/login-cookie")
+async def login_cookie(
+    response: Response,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.user_name == username).first()
+    if not user or not verify_password(password, user.hashed_password):
+        # Return to login page with error (handled by frontend logic usually, 
+        # but for simplicity we might redirect or return error)
+        # return RedirectResponse(url="/login?error=Invalid Credentials", status_code=303)
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.user_name}, expires_delta=access_token_expires
+    )
+    
+    # Set cookie
+    response.set_cookie(
+        key="access_token",
+        value=f"{access_token}",
+        httponly=True,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False # Set to True in production (HTTPS)
+    )
+    return {"message": "Login successful"}
+
+@router.get("/logout")
+async def logout(response: Response):
+    response.delete_cookie("access_token")
+    return {"message": "Logged out"}

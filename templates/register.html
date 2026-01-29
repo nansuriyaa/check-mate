@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Register - CheckMate{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-xl border border-gray-700">
+        <h2 class="text-3xl font-bold text-center text-white">Create Account</h2>
+        <form id="registerForm" class="space-y-4">
+            <div>
+                <label for="full_name" class="block text-sm font-medium text-gray-400">Full Name</label>
+                <input type="text" name="full_name" id="full_name" required 
+                    class="w-full px-4 py-2 mt-1 text-gray-100 bg-gray-700 border border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+            </div>
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-400">Username</label>
+                <input type="text" name="user_name" id="username" required 
+                    class="w-full px-4 py-2 mt-1 text-gray-100 bg-gray-700 border border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+            </div>
+             <div>
+                <label for="email" class="block text-sm font-medium text-gray-400">Email</label>
+                <input type="email" name="email" id="email" required 
+                    class="w-full px-4 py-2 mt-1 text-gray-100 bg-gray-700 border border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-400">Password</label>
+                <input type="password" name="password" id="password" required 
+                    class="w-full px-4 py-2 mt-1 text-gray-100 bg-gray-700 border border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+            </div>
+            <button type="submit" 
+                class="w-full px-4 py-2 font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition duration-150">
+                Register
+            </button>
+        </form>
+        <p class="text-sm text-center text-gray-400">
+            Already have an account? <a href="/login" class="text-blue-500 hover:underline">Log in</a>
+        </p>
+         <div id="errorMsg" class="hidden text-sm text-center text-red-500 mt-2"></div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Convert FormData to JSON
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                // Auto login or redirect to login (redirecting to login for now)
+                window.location.href = '/login';
+            } else {
+                const errorData = await response.json();
+                document.getElementById('errorMsg').innerText = errorData.detail || 'Registration failed';
+                document.getElementById('errorMsg').classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+</script>
+{% endblock %}

@@ -24,7 +24,7 @@ def save_uploaded_file(uploaded_file, target_dir: Path) -> str:
     """Save uploaded files and return local paths."""
     try:
         target_dir.mkdir(parents=True, exist_ok=True)
-        name = getattr(uploaded_file, "name", "file")
+        name = getattr(uploaded_file, "name", None) or getattr(uploaded_file, "filename", "file")
         ext = Path(name).suffix.lower()
         if ext not in SUPPORTED_EXTENSIONS:
             log.warning("Unsupported file skipped", filename=name)
